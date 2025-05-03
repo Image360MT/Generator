@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image Overlay with Canvas</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload Images and Add Text</h2>
+  <label>Background Image (600x600): <input type="file" id="bgImage" accept="image/*"></label><br><br>
+  <label>Overlay Image (400x400): <input type="file" id="overlayImage" accept="image/*"></label><br><br>
+  <label>Top Text: <input type="text" id="topText" placeholder="Enter text"></label><br><br>
+  <button onclick="generateCanvas()">Generate</button>
+  <button onclick="downloadImage()">Download</button>
+
+  <br><br>
+  <canvas id="canvas" width="600" height="600"></canvas>
+
+  <script>
+    function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function generateCanvas() {
+      const bgFile = document.getElementById('bgImage').files[0];
+      const overlayFile = document.getElementById('overlayImage').files[0];
+      const topText = document.getElementById('topText').value;
+
+      if (!bgFile || !overlayFile) {
+        alert('Please upload both images.');
+        return;
+      }
+
+      const bgImg = await loadImage(bgFile);
+      const overlayImg = await loadImage(overlayFile);
+
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw background image resized to 600x600
+      ctx.drawImage(bgImg, 0, 0, 600, 600);
+
+      // Draw overlay image resized to 400x400 and shifted down by 50px with drop shadow
+      const x = (600 - 400) / 2;
+      const y = ((600 - 400) / 2) + 50;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetX = 10;
+      ctx.shadowOffsetY = 10;
+      ctx.drawImage(overlayImg, x, y, 400, 400);
+      ctx.restore();
+
+      // Draw text lower and centered
+      ctx.font = '36pt "Comic Sans MS", cursive';
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'center';
+      ctx.fillText(topText, 300, 120); // Text moved up to y=120
+    }
+
+    function downloadImage() {
+      const canvas = document.getElementById('canvas');
+      const link = document.createElement('a');
+      link.download = 'composited-image.jpg';
+      link.href = canvas.toDataURL('image/jpeg');
+      link.click();
+    }
+  </script>
+</body>
+</html>
